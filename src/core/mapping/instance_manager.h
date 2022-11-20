@@ -101,31 +101,36 @@ class ReductionInstanceSet {
   using Instance      = Legion::Mapping::PhysicalInstance;
   using Domain        = Legion::Domain;
   using ReductionOpID = Legion::ReductionOpID;
+  using TaskID        = Legion::TaskID;
 
  public:
   struct ReductionInstanceSpec {
     ReductionInstanceSpec() {}
-    ReductionInstanceSpec(const ReductionOpID& op,
+    ReductionInstanceSpec(const TaskID& tid,
+                          const ReductionOpID& op,
                           const Instance& inst,
                           const InstanceMappingPolicy& po)
-      : redop(op), instance(inst), policy(po)
+      : task_id(tid), redop(op), instance(inst), policy(po)
     {
     }
 
+    TaskID task_id      = 0;
     ReductionOpID redop = 0;
     Instance instance{};
     InstanceMappingPolicy policy{};
   };
 
  public:
-  bool find_instance(ReductionOpID& redop,
-                     Region& region,
+  bool find_instance(TaskID tid,
+                     ReductionOpID redop,
+                     Region region,
                      Instance& result,
                      const InstanceMappingPolicy& policy) const;
 
  public:
-  void record_instance(ReductionOpID& redop,
-                       Region& region,
+  void record_instance(TaskID tid,
+                       ReductionOpID redop,
+                       Region region,
                        Instance& instance,
                        const InstanceMappingPolicy& policy);
   // public:
@@ -149,6 +154,7 @@ class BaseInstanceManager {
   using Domain       = Legion::Domain;
   using FieldID      = Legion::FieldID;
   using Memory       = Legion::Memory;
+  using TaskID       = Legion::TaskID;
 
  public:
   struct FieldMemInfo {
@@ -222,14 +228,16 @@ class ReductionInstanceManager : public BaseInstanceManager {
   using ReductionOpID = Legion::ReductionOpID;
 
  public:
-  bool find_instance(ReductionOpID& redop,
+  bool find_instance(TaskID tid,
+                     ReductionOpID redop,
                      Region region,
                      FieldID field_id,
                      Memory memory,
                      Instance& result,
                      const InstanceMappingPolicy& policy = {});
 
-  void record_instance(ReductionOpID& redop,
+  void record_instance(TaskID tid,
+                       ReductionOpID redop,
                        Region region,
                        FieldID field_id,
                        Instance instance,

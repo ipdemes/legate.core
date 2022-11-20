@@ -581,7 +581,7 @@ void BaseMapper::map_task(const MapperContext ctx,
   for (uint32_t idx = 0; idx < task.regions.size(); ++idx)
     output_map[&task.regions[idx]] = &output.chosen_instances[idx];
 
-  map_legate_stores(ctx, task, for_stores, task.target_proc, output_map);
+  map_legate_stores(ctx, task, for_stores, task.target_proc, output_map, task.task_id);
 }
 
 void BaseMapper::map_replicate_task(const MapperContext ctx,
@@ -610,7 +610,8 @@ void BaseMapper::map_legate_stores(const MapperContext ctx,
                                    const Mappable& mappable,
                                    std::vector<StoreMapping>& mappings,
                                    Processor target_proc,
-                                   OutputMap& output_map)
+                                   OutputMap& output_map,
+                                   Legion::TaskID task_id)
 {
   auto try_mapping = [&](bool can_fail) {
     const PhysicalInstance NO_INST{};
@@ -618,7 +619,8 @@ void BaseMapper::map_legate_stores(const MapperContext ctx,
     for (auto& mapping : mappings) {
       PhysicalInstance result = NO_INST;
       auto reqs               = mapping.requirements();
-      while (map_legate_store(ctx, mappable, mapping, reqs, target_proc, result, can_fail)) {
+      while (
+        map_legate_store(ctx, mappable, mapping, reqs, target_proc, result, can_fail, task_id)) {
         if (NO_INST == result) {
 #ifdef DEBUG_LEGATE
           assert(can_fail);
@@ -704,7 +706,8 @@ bool BaseMapper::map_legate_store(const MapperContext ctx,
                                   const std::set<const RegionRequirement*>& reqs,
                                   Processor target_proc,
                                   PhysicalInstance& result,
-                                  bool can_fail)
+                                  bool can_fail,
+                                  Legion::TaskID task_id)
 {
   if (reqs.empty()) return false;
 
@@ -744,7 +747,7 @@ bool BaseMapper::map_legate_store(const MapperContext ctx,
     // See if we already have it in our local instances
     if (fields.size() == 1 && regions.size() == 1 &&
         reduction_instances->find_instance(
-          redop, regions.front(), fields.front(), target_memory, result, policy)) {
+          task_id, redop, regions.front(), fields.front(), target_memory, result, policy)) {
 #ifdef DEBUG_LEGATE
       logger.debug() << "Operation " << mappable.get_unique_id()
                      << ": reused cached reduction instance " << result << " for "
@@ -777,7 +780,7 @@ bool BaseMapper::map_legate_store(const MapperContext ctx,
       // store reduction instance
       if (fields.size() == 1 && regions.size() == 1) {
         auto fid = fields.front();
-        reduction_instances->record_instance(redop, regions.front(), fid, result, policy);
+        reduction_instances->record_instance(task_id, redop, regions.front(), fid, result, policy);
       }
       runtime->enable_reentrant(ctx);
       // We already did the acquire

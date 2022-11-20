@@ -264,7 +264,8 @@ class BaseMapper : public Legion::Mapping::Mapper, public LegateMapper {
                          const Legion::Mappable& mappable,
                          std::vector<StoreMapping>& mappings,
                          Legion::Processor target_proc,
-                         OutputMap& output_map);
+                         OutputMap& output_map,
+                         Legion::TaskID task_id = 0);
   void tighten_write_policies(const Legion::Mappable& mappable,
                               std::vector<StoreMapping>& mappings);
   bool map_legate_store(const Legion::Mapping::MapperContext ctx,
@@ -273,7 +274,8 @@ class BaseMapper : public Legion::Mapping::Mapper, public LegateMapper {
                         const std::set<const Legion::RegionRequirement*>& reqs,
                         Legion::Processor target_proc,
                         Legion::Mapping::PhysicalInstance& result,
-                        bool can_fail);
+                        bool can_fail,
+                        Legion::TaskID task_id);
   void report_failed_mapping(const Legion::Mappable& mappable,
                              unsigned index,
                              Legion::Memory target_memory,

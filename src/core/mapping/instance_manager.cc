@@ -302,34 +302,40 @@ void InstanceSet::dump_and_sanity_check() const
   for (auto& entry : instances_) assert(found_groups.count(entry.first) > 0);
 }
 
-bool ReductionInstanceSet::find_instance(ReductionOpID& redop,
-                                         Region& region,
+bool ReductionInstanceSet::find_instance(Legion::TaskID tid,
+                                         ReductionOpID redop,
+                                         Region region,
                                          Instance& result,
                                          const InstanceMappingPolicy& policy) const
 {
   auto finder = instances_.find(region);
   if (finder == instances_.end()) return false;
+#ifdef DEBUG_LEGATE
+  log_instmgr.debug() << "find_region in resuction Instance Set(" << region << "   =? "
+                      << finder->first;
+#endif
   auto& spec = finder->second;
-  if (spec.policy == policy && spec.redop == redop) {
+  if (spec.policy == policy && spec.redop == redop && spec.task_id != tid) {
     result = spec.instance;
     return true;
   } else
     return false;
 }
 
-void ReductionInstanceSet::record_instance(ReductionOpID& redop,
-                                           Region& region,
+void ReductionInstanceSet::record_instance(Legion::TaskID tid,
+                                           ReductionOpID redop,
+                                           Region region,
                                            Instance& instance,
                                            const InstanceMappingPolicy& policy)
 {
   auto finder = instances_.find(region);
   if (finder != instances_.end()) {
     auto& spec = finder->second;
-    if (spec.policy != policy || spec.redop != redop) {
-      instances_.insert_or_assign(region, ReductionInstanceSpec(redop, instance, policy));
+    if (spec.policy != policy || spec.redop != redop || spec.task_id != tid) {
+      instances_.insert_or_assign(region, ReductionInstanceSpec(tid, redop, instance, policy));
     }
   } else {
-    instances_[region] = ReductionInstanceSpec(redop, instance, policy);
+    instances_[region] = ReductionInstanceSpec(tid, redop, instance, policy);
   }
 }
 
@@ -415,7 +421,8 @@ std::map<Legion::Memory, size_t> InstanceManager::aggregate_instance_sizes() con
   return manager;
 }
 
-bool ReductionInstanceManager::find_instance(ReductionOpID& redop,
+bool ReductionInstanceManager::find_instance(Legion::TaskID tid,
+                                             ReductionOpID redop,
                                              Region region,
                                              FieldID field_id,
                                              Memory memory,
@@ -424,25 +431,26 @@ bool ReductionInstanceManager::find_instance(ReductionOpID& redop,
 {
   auto finder = instance_sets_.find(FieldMemInfo(region.get_tree_id(), field_id, memory));
   return policy.allocation != AllocPolicy::MUST_ALLOC && finder != instance_sets_.end() &&
-         finder->second.find_instance(redop, region, result, policy);
+         finder->second.find_instance(tid, redop, region, result, policy);
 }
 
-void ReductionInstanceManager::record_instance(ReductionOpID& redop,
+void ReductionInstanceManager::record_instance(Legion::TaskID tid,
+                                               ReductionOpID redop,
                                                Region region,
                                                FieldID fid,
                                                Instance instance,
                                                const InstanceMappingPolicy& policy)
 {
-  const auto mem = instance.get_location();
-  const auto tid = instance.get_tree_id();
+  const auto mem    = instance.get_location();
+  const auto treeid = instance.get_tree_id();
 
-  FieldMemInfo key(tid, fid, mem);
+  FieldMemInfo key(treeid, fid, mem);
   auto finder = instance_sets_.find(key);
   if (finder != instance_sets_.end())
-    instance_sets_[key].record_instance(redop, region, instance, policy);
+    instance_sets_[key].record_instance(tid, redop, region, instance, policy);
   else {
     ReductionInstanceSet set;
-    set.record_instance(redop, region, instance, policy);
+    set.record_instance(tid, redop, region, instance, policy);
     instance_sets_[key] = set;
   }
 }

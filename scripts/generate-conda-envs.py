@@ -91,6 +91,8 @@ class BuildConfig(SectionConfig):
             "scikit-build>=0.13.1",
             "setuptools>=60",
             "zlib",
+            "numba",
+            "six"
         )
         if self.compilers:
             pkgs += ("c-compiler", "cxx-compiler")
@@ -148,7 +150,10 @@ class TestsConfig(SectionConfig):
 
     @property
     def pip(self) -> Reqs:
-        return ("tifffile",)
+        return ("tifffile",
+                "types-Pygments",
+                "types-babel",
+                "types-six")
 
 
 @dataclass(frozen=True)

@@ -161,12 +161,18 @@ class DocsConfig(SectionConfig):
     header = "docs"
 
     @property
+    def conda(self) -> Reqs:
+        return ("pandoc",)
+
+    @property
     def pip(self) -> Reqs:
         return (
+            "ipython",
             "jinja2",
             "markdown<3.4.0",
             "pydata-sphinx-theme",
             "myst-parser",
+            "nbsphinx",
             "sphinx-copybutton",
             "sphinx>=4.4.0",
         )
@@ -244,7 +250,7 @@ channels:
   - conda-forge
 dependencies:
 
-  - python={python}
+  - python={python},!=3.9.7  # avoid https://bugs.python.org/issue45121
 
 {conda_sections}{pip}
 """
@@ -319,7 +325,6 @@ class BooleanFlag(Action):
 
 
 if __name__ == "__main__":
-
     import sys
 
     parser = ArgumentParser()

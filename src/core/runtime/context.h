@@ -141,6 +141,7 @@ class TaskContext {
   bool can_raise_exception() const { return can_raise_exception_; }
   DomainPoint get_task_index() const;
   Domain get_launch_domain() const;
+  Processor get_current_processor()const;
 
  public:
   void make_all_unbound_stores_empty();

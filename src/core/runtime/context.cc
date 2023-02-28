@@ -218,6 +218,8 @@ DomainPoint TaskContext::get_task_index() const { return task_->index_point; }
 
 Domain TaskContext::get_launch_domain() const { return task_->index_domain; }
 
+Processor TaskContext::get_current_processor()const{return task_->current_proc;}
+
 void TaskContext::make_all_unbound_stores_empty()
 {
   for (auto& output : outputs_)

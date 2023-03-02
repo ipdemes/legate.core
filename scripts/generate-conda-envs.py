@@ -162,7 +162,7 @@ class DocsConfig(SectionConfig):
 
     @property
     def conda(self) -> Reqs:
-        return ("pandoc",)
+        return ("pandoc", "doxygen")
 
     @property
     def pip(self) -> Reqs:
@@ -170,7 +170,7 @@ class DocsConfig(SectionConfig):
             "ipython",
             "jinja2",
             "markdown<3.4.0",
-            "pydata-sphinx-theme",
+            "pydata-sphinx-theme>=0.13",
             "myst-parser",
             "nbsphinx",
             "sphinx-copybutton",

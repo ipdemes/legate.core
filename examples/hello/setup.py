@@ -14,17 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
+from pathlib import Path
 
 from setuptools import find_packages
 from skbuild import setup
 
-import versioneer
+import legate.install_info as lg_install_info
+
+legate_dir = Path(lg_install_info.libpath).parent.as_posix()
+
+cmake_flags = [
+    f"-Dlegate_core_ROOT:STRING={legate_dir}",
+]
+
+env_cmake_args = os.environ.get("CMAKE_ARGS")
+if env_cmake_args is not None:
+    cmake_flags.append(env_cmake_args)
+os.environ["CMAKE_ARGS"] = " ".join(cmake_flags)
+
 
 setup(
-    name="legate.core",
-    version=versioneer.get_version(),
-    description="legate.core - The Foundation for All Legate Libraries",
-    url="https://github.com/nv-legate/legate.core",
+    name="Legate Hello",
+    version="0.1",
+    description="A Hello World for Legate",
     author="NVIDIA Corporation",
     license="Apache 2.0",
     classifiers=[
@@ -33,42 +46,14 @@ setup(
         "Topic :: Scientific/Engineering",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
     ],
-    extras_require={
-        "test": [
-            "colorama",
-            "coverage",
-            "mock",
-            "mypy>=0.961",
-            "pynvml",
-            "pytest-cov",
-            "pytest",
-        ]
-    },
     packages=find_packages(
         where=".",
-        include=[
-            "legate",
-            "legate.*",
-            "legate.core",
-            "legate.core.*",
-            "legate.timing",
-            "legate.timing.*",
-        ],
+        include=["hello", "hello.*"],
     ),
     include_package_data=True,
-    entry_points={
-        "console_scripts": [
-            "legate = legate.driver:main",
-            "legate-jupyter = legate.jupyter:main",
-            "lgpatch = legate.lgpatch:main",
-        ],
-    },
-    scripts=["bind.sh"],
-    cmdclass=versioneer.get_cmdclass(),
-    install_requires=["numpy>=1.22"],
     zip_safe=False,
 )

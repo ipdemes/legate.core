@@ -223,7 +223,7 @@ Processor TaskContext::get_current_processor()const{return task_->current_proc;}
 void TaskContext::make_all_unbound_stores_empty()
 {
   for (auto& output : outputs_)
-    if (output.is_output_store()) output.make_empty();
+    if (output.is_unbound_store()) output.bind_empty_data();
 }
 
 ReturnValues TaskContext::pack_return_values() const
@@ -253,7 +253,7 @@ std::vector<ReturnValue> TaskContext::get_return_values() const
   std::vector<ReturnValue> return_values;
 
   for (auto& output : outputs_) {
-    if (!output.is_output_store()) continue;
+    if (!output.is_unbound_store()) continue;
     return_values.push_back(output.pack_weight());
     ++num_unbound_outputs;
   }

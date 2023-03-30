@@ -1665,8 +1665,13 @@ class Store:
         # partition
 
         # For the next common case, we cache the projection functor id
-
+        print("IRINA DEBUG promote", self._transform)
         has_promotion = self._transform.has_promote()
+        if has_promotion:
+            print(
+                "IRINA DEBUG promote_dims = ",
+                set(self._transform.promote_dims()),
+            )
         if proj_fn is None:
             if self._projection is None:
                 point = execute_functor_symbolically(self.ndim)

@@ -212,6 +212,12 @@ void BaseMapper::select_task_options(const Legion::Mapping::MapperContext ctx,
   for (uint32_t idx = 0; idx < task.regions.size(); ++idx) {
     auto& req = task.regions[idx];
     if (req.privilege & LEGION_WRITE_PRIV) continue;
+    Domain sharding_domain = task.index_domain;
+    if (task.sharding_space.exists())
+      sharding_domain = runtime->get_index_space_domain(ctx, task.sharding_space);
+
+    std::cout << "IRINA DEBUG task " << task.get_task_name() << " task domain" << sharding_domain
+              << std::endl;
     // Look up the projection for the input region. There are cases where
     // Legate libraries register their own projection functors that are
     // not recorded by Legate Core. So, handle the case when these functors

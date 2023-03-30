@@ -263,6 +263,9 @@ class Promote(Transform):
         buf.pack_32bit_int(self._extra_dim)
         buf.pack_64bit_int(self._dim_size)
 
+    def dim(self) -> int:
+        return self._extra_dim
+
 
 class Project(Transform):
     def __init__(self, dim: int, index: int) -> None:
@@ -596,6 +599,9 @@ class TransformStackBase(TransformProto, Protocol):
     def has_promote(self) -> bool:
         ...
 
+    def promote_dims(self) -> Tuple[int, ...]:
+        ...
+
 
 class TransformStack(TransformStackBase):
     def __init__(
@@ -679,7 +685,19 @@ class TransformStack(TransformStackBase):
         self._parent.serialize(buf)
 
     def has_promote(self) -> bool:
-        return isinstance(self._transform, Promote)
+        return isinstance(self._transform, Promote) or isinstance(
+            self._parent, Promote
+        )
+
+    def promote_dims(self) -> Tuple[int, ...]:
+        if self._parent.promote_dims():
+            res = self._parent.promote_dims()
+        else:
+            res = tuple()
+        if isinstance(self._transform, Promote):
+            res += (self._transform.dim(),)
+
+        return res
 
 
 class IdentityTransform(TransformStackBase):
@@ -741,6 +759,9 @@ class IdentityTransform(TransformStackBase):
 
     def has_promote(self) -> bool:
         return False
+
+    def promote_dims(self) -> Tuple[int, ...]:
+        return tuple()
 
 
 identity = IdentityTransform()

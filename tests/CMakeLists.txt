@@ -17,6 +17,4 @@
 # We abuse find package for testing purposes here to
 # 'find' the current build tree to test package builds
 
-add_subdirectory(registry)
-add_subdirectory(collective)
-
+add_subdirectory(integration)

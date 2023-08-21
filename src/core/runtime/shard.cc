@@ -121,7 +121,15 @@ class LegateShardingFunctor : public Legion::ShardingFunctor {
     auto hi    = proj_functor_->project_point(launch_space.hi(), launch_space);
     auto point = proj_functor_->project_point(p, launch_space);
 
-    auto shard_id = (linearize(lo, hi, point) + offset_) / per_node_count_ + start_node_id_;
+    auto per_node_count = per_node_count_;
+    auto diff           = launch_space.get_volume() - per_node_count_ * total_shards;
+    if (diff > 0) {
+      auto num_shards    = end_node_id_ - start_node_id_;
+      uint32_t new_count = (launch_space.get_volume() + num_shards - 1) / num_shards;
+      per_node_count     = std::max(per_node_count_, new_count);
+    }
+    auto shard_id = (linearize(lo, hi, point) + offset_) / per_node_count + start_node_id_;
+
 #ifdef DEBUG_LEGATE
     assert(start_node_id_ <= shard_id && shard_id < end_node_id_);
 #endif

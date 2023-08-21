@@ -251,6 +251,8 @@ class RegionField:
         assert self.attached_alloc is not None
         detach = attachment_manager.remove_detachment(self.detach_key)
         detach.unordered = unordered  # type: ignore[union-attr]
+        if self.detach_future:
+            self.detach_future.wait()
         detach_future = attachment_manager.detach_external_allocation(
             self.attached_alloc, detach, defer
         )
@@ -260,6 +262,7 @@ class RegionField:
         self.attached_alloc = None
         if unordered:
             self.detach_future = detach_future
+            self.wait()
 
     def get_inline_mapped_region(self) -> PhysicalRegion:
         if self.detach_future:

@@ -622,9 +622,11 @@ class AttachmentManager:
         detachments = self._deferred_detachments
         self._deferred_detachments = list()
         for alloc, detach in detachments:
-            self.detach_external_allocation(
+            future = self.detach_external_allocation(
                 alloc, detach, defer=False, previously_deferred=True
             )
+            if future:
+                future.wait()
 
     def prune_detachments(self) -> None:
         to_remove = []

@@ -1239,7 +1239,7 @@ class Detach(Dispatchable[Future]):
         self,
         runtime: legion.legion_runtime_t,
         context: legion.legion_context_t,
-        unordered: bool = False,
+        unordered: bool = True,
         **kwargs: Any,
     ) -> Future:
         """

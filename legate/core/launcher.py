@@ -112,6 +112,9 @@ class LauncherArg(Protocol):
     def pack(self, buf: BufferBuilder) -> None:
         ...
 
+    def wait(self) -> None:
+        ...
+
 
 class ScalarArg:
     def __init__(
@@ -133,6 +136,9 @@ class ScalarArg:
 
     def __str__(self) -> str:
         return f"ScalarArg({self._value}, {self._dtype})"
+
+    def wait(self) -> None:
+        pass
 
 
 class FutureStoreArg:
@@ -158,6 +164,9 @@ class FutureStoreArg:
     def __str__(self) -> str:
         return f"FutureStoreArg({self._store})"
 
+    def wait(self) -> None:
+        self._store.wait()
+
 
 class RegionFieldArg:
     def __init__(
@@ -175,6 +184,9 @@ class RegionFieldArg:
         self._req = req
         self._field_id = field_id
         self._redop = redop
+
+    def wait(self) -> None:
+        self._store.wait()
 
     def pack(self, buf: BufferBuilder) -> None:
         self._store.serialize(buf)
@@ -987,8 +999,15 @@ class TaskLauncher:
         self.set_mapper_arg(task)
         return task
 
+    def wait_all(self) -> None:
+        for future in self._future_args:
+            future.wait()
+        for input_store in self._inputs:
+            input_store.wait()
+
     def execute(self, launch_domain: Rect) -> ParallelExecutionResult:
         task = self.build_task(launch_domain, BufferBuilder())
+        self.wait_all()
         result = self._context.dispatch(task)
         assert isinstance(result, FutureMap)
         self._out_analyzer.update_storages()
@@ -1000,6 +1019,7 @@ class TaskLauncher:
 
     def execute_single(self) -> Future:
         argbuf = BufferBuilder()
+        self.wait_all()
         result = self._context.dispatch_single(self.build_single_task(argbuf))
         self._out_analyzer.update_storages()
         return result
@@ -1172,6 +1192,19 @@ class CopyLauncher:
         )
         argbuf.pack_32bit_uint(runtime.get_sharding(proj_id))
 
+    def wait_all(self) -> None:
+        # for future in self._future_args:
+        #    future.wait()
+        for input_store in self._inputs:
+            input_store.wait()
+        # some stores in outputs have read-write permissions
+        for out_store in self._outputs:
+            out_store.wait()
+        if len(self._target_indirects) > 0:
+            self._target_indirects[0].wait()
+        if len(self._source_indirects) > 0:
+            self._source_indirects[0].wait()
+
     def build_copy(self, launch_domain: Rect) -> IndexCopy:
         argbuf = BufferBuilder()
         self.pack_mapper_arg(argbuf)
@@ -1243,10 +1276,12 @@ class CopyLauncher:
         self, launch_domain: Rect, redop: Optional[int] = None
     ) -> None:
         copy = self.build_copy(launch_domain)
+        self.wait_all()
         self._context.dispatch(copy)
 
     def execute_single(self) -> None:
         copy = self.build_single_copy()
+        self.wait_all()
         self._context.dispatch_single(copy)
 
 
@@ -1327,8 +1362,10 @@ class FillLauncher:
 
     def execute(self, launch_domain: Rect) -> None:
         fill = self.build_fill(launch_domain)
+        self._value.storage.wait()
         self._context.dispatch(fill)
 
     def execute_single(self) -> None:
         fill = self.build_single_fill()
+        self._value.storage.wait()
         self._context.dispatch_single(fill)

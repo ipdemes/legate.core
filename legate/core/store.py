@@ -148,6 +148,10 @@ class RegionField:
             f"fid: {self.field.field_id})"
         )
 
+    def wait(self) -> None:
+        if self.detach_future:
+            self.detach_future.wait()
+
     def attach_external_allocation(
         self, alloc: Attachable, share: bool
     ) -> None:
@@ -769,6 +773,10 @@ class Storage:
                 self._unique_id, functor, part
             )
         return part
+
+    def wait(self) -> None:
+        if self._data:
+            self._data.wait()
 
 
 class StorePartition:
@@ -1724,3 +1732,6 @@ class Store:
         launch_shape = (self.shape + tile_shape - 1) // tile_shape
         partition = Tiling(tile_shape, launch_shape)
         return self.partition(partition)
+
+    def wait(self) -> None:
+        self._storage.wait()

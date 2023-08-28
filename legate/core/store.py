@@ -126,6 +126,9 @@ class RegionField:
     def __del__(self) -> None:
         if self.attached_alloc is not None:
             self.detach_external_allocation(unordered=True, defer=True)
+        if self.detach_future and not self.detach_future.is_ready():
+            self.detach_future.wait()
+            self.detach_future = None
 
     @staticmethod
     def create(
@@ -161,6 +164,7 @@ class RegionField:
         # previously encountered ranges.
         if self.detach_future and not self.detach_future.is_ready():
             self.detach_future.wait()
+            self.detach_future = None
         attachment_manager.attach_external_allocation(alloc, self)
 
         def record_detach(detach: Union[Detach, IndexDetach]) -> None:
@@ -299,6 +303,7 @@ class RegionField:
                 runtime.unmap_region(self.physical_region, unordered=unordered)
                 self.physical_region = None
                 self.physical_region_mapped = False
+                self.detach_future = None
         else:
             self.parent.decrement_inline_mapped_ref_count(unordered=unordered)
 

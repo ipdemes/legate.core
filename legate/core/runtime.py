@@ -1913,6 +1913,7 @@ class Runtime:
         future_map: Union[Future, FutureMap],
         redop: int,
         ordered: bool = True,
+        init_value: Optional[Future] = None,
     ) -> Future:
         if isinstance(future_map, Future):
             return future_map
@@ -1923,6 +1924,7 @@ class Runtime:
                 redop,
                 ordered=ordered,
                 mapper=self.core_context.mapper_id,
+                init_value=init_value,
             )
 
     def reduce_exception_future_map(
